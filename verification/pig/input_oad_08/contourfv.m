@@ -1,0 +1,57 @@
+function [hc,hh,hcf] = contourfv(x,z,h,a,varargin)
+% CONTOURFV(X,Z,H,A)
+%
+% Is the same as CONTOURF except it automatically extends the dataset
+% to the depth of the topography "H". This is srictly for plotting
+% vertical (x,z) sections in conjuction with "partial cells" in the MITgcm.
+%
+% X is horizontal coordinate (vector)
+% Z is vertical coordinate (vector)
+% H is depth of bottom (vector)
+% A is field to be plotted (matrix)
+%
+% Optional arguments are passed on to CONTOURF
+%
+% $Header: /u/gcmpack/MITgcm/utils/matlab/contourfv.m,v 1.2 2004/06/04 17:09:11 adcroft Exp $
+
+nx=prod(size(x,1));
+nz=prod(size(z,2));
+%max(size(h))
+%prod(size(h))
+if max(size(h)) ~= prod(size(h)) | prod(size(h)) ~= nx
+ error('H must have dimensions of size(X)');
+end
+%ndims(squeeze(a))
+%size(squeeze(a))
+if ndims(squeeze(a)) ~= 2 | sum(size(squeeze(a)) ~= [nx nz])
+ error('A must have dimensions of size(X) x size(H)');
+end
+
+% Create extended Z coordinate
+Z=zeros(nx,nz+2);
+Z(:,2:nz+1)=z;
+Z(:,1)=z(:,1);
+Z(:,nz+2)=1.5*z(:,nz)-0.5*z(:,nz-1);
+
+X=[x x(:,end-1:end)];
+
+aa=squeeze(a);
+au=aa(:,[1 1:nz-1]);
+aa(isnan(aa))=au(isnan(aa));
+A=zeros(nx,nz+2);
+A(:,2:nz+1)=aa;
+A(:,1)=aa(:,1);
+A(:,nz+2)=aa(:,nz);
+clear aa au
+
+Hx = h(:)*ones(1,nz+2);
+
+% H might be positive...
+if min(z(:))*min(h(:)) > 0
+ Z=max(Z,Hx);
+else
+ Z=max(Z,-Hx);
+end
+clear Hx
+
+[hc hh hcf]=contourf(X,Z,A,varargin{:});

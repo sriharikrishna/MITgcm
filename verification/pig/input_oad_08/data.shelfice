@@ -1,0 +1,12 @@
+# ===================================
+# | Parameters for SHELFICE package |
+# ===================================
+ &SHELFICE_PARM01
+ SHELFICEwriteState = .true.,
+#mult_shelfice=1.,
+#useISOMIPTD = .true.,
+ SHELFICEconserve = .true.,
+ SHELFICEboundaryLayer = .true.,
+ SHELFICEtopoFile='icetopo.pig08_gendata.bin',
+ SHELFICEloadAnomalyFile = 'pload.pig08.jmd95z',
+ &

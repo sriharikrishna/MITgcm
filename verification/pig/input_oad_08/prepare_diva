@@ -1,0 +1,7 @@
+rm -f oad_reg_cp.*
+rm -f oad_cp.*
+echo "0" > oad_reg_state.000
+echo "-1" >> oad_reg_state.000
+echo "1" >> oad_reg_state.000
+echo "8" >> oad_reg_state.000
+echo "103680" >> oad_reg_state.000

@@ -1,0 +1,10 @@
+# Packages
+ &PACKAGES
+#useKPP=.true.,
+ useOBCS=.TRUE.,
+ useGrdChk=.true.,
+#useMNC=.TRUE.,
+ useShelfIce=.true.,
+#useSEAICE=.true.,
+# useDiagnostics = .true.,
+ &
