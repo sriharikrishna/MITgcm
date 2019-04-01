@@ -19,7 +19,7 @@ echo "1" >> oad_reg_state.000
 
 #maxadjiter: the number of adjoint steps to perform
 
-echo "8" >> oad_reg_state.000
+echo "2" >> oad_reg_state.000
 
 #myIter: the iteration at which computation is presently
 #At the start this should equal nIter0
