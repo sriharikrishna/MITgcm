@@ -72,7 +72,8 @@
 # Time stepping parameters
  &PARM03
  niter0=103680,
- nTimeSteps=4,
+ nTimeSteps=2,
+ nTimeSteps_l2=2,
 # startTime=0.,
 # endTime=31104000.,
 #endTime=8640000.,
