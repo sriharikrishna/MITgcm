@@ -123,7 +123,7 @@ C we may need these for the checkpointing
 !$PLACEHOLDER_PRAGMA$ id=9
               call cp_close
             end if 
-            if(myfwditer.eq.maxfwditer) then
+            if(myfwditer.eq.min(maxadjiter,maxfwditer)) then
               !stop 'DIVA End of forward run after checkpointing'
               print *, 'DIVA End of forward run after checkpointing'
               call OAD_revTape

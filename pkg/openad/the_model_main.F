@@ -315,6 +315,7 @@ C     myIter :: Iteration counter for this thread
 C -->> OpenAD
       LOGICAL fwddone
       integer currcp, curradjointcp, maxfwditer, maxadjiter
+      integer fwdchkptcount
       _RL foo(1-olx:snx+olx,1-oly:sny+oly,nr,nsx,nsy)
       _RL foo2D(1-olx:snx+olx,1-oly:sny+oly,nsx,nsy)
       CHARACTER*(10) suff
@@ -484,6 +485,7 @@ C#endif
       our_rev_mode%tape=.TRUE.
       call timeratio()
 #ifdef ALLOW_OPENAD_DIVA
+      do fwdchkptcount=1,MAX(1,maxfwditer/maxadjiter)
       if((curradjointcp.eq.-1).and.(currcp.ne.nTimeSteps_l2)) then
 #endif
           CALL OpenAD_THE_MAIN_LOOP( myTime, myIter, myThid )
@@ -491,6 +493,7 @@ C#endif
           call cp_read_state(currcp, curradjointcp, maxfwditer, maxadjit
      +er, myIter)
       end if
+      end do
 #endif 
       CALL TIMER_STOP ('THE_MAIN_LOOP (F)      [THE_MODEL_MAIN]',myThid)
       CALL TIMER_START('THE_MAIN_LOOP (A)      [THE_MODEL_MAIN]',myThid)
