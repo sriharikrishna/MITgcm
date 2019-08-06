@@ -70,7 +70,6 @@ C we may need these for the checkpointing
       use gchem_size_mod
       use gchem_fields_mod
 #endif
-#endif      
 !$TEMPLATE_PRAGMA_DECLARATIONS
       integer, save :: currcp, curradjointcp, maxfwditer, maxadjiter
       integer myfwditer, myadjiter
@@ -83,6 +82,7 @@ C we may need these for the checkpointing
       integer, save :: theArgIStackoffset=0, theArgIStackSize=0
       type(modeType) :: our_orig_mode
       integer nt
+      integer :: cpsize
 
       integer iaddr
       external iaddr

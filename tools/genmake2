@@ -1521,6 +1521,8 @@ for ac_option in "$@" ; do
 
 	-diva | --diva)
 	    OPENAD_DIVA="ALLOW_OPENAD_DIVA=" ;;
+	-oadc | --oadc)
+	    OPENAD_COMPRESSION="ALLOW_OPENAD_COMPRESSION=" ;;
 
 	-pdepend | --pdepend)
 	    ac_prev=PKG_DEPEND ;;
@@ -1945,6 +1947,11 @@ fi
 if test ! "x$USE_R4" = x ; then
       echo "  Turning on LET_RS_BE_REAL4 cpp flag"
       DEFINES="$DEFINES -DLET_RS_BE_REAL4"
+fi
+
+if test ! "x$OPENAD_COMPRESSION" = x ; then
+      echo "  Tuen on OpenAD compression cpp macros"
+      DEFINES="$DEFINES -DALLOW_OPENAD_COMPRESSION"
 fi
 
 if test ! "x$TS" = x ; then
@@ -3586,7 +3593,25 @@ adDepend: \$(ALL_LINKED_FILES) \$(addsuffix _mod.h, \$(CB2M_F90_SRC_NAMES)) \$(a
 	\$(TOOLSDIR)/f90mkdepend >> \$(MAKEFILE)
 	-rm -f makedepend.out
 
+EOF
+
+if test ! "x$OPENAD_COMPRESSION" = x ; then
+cat >>$MAKEFILE <<EOF
+OPENAD_SUPPORT_F90_SRC_COMPRESS_FILES = \
+cp_f.F90 
+EOF
+fi
+
+if test ! "x$OPENAD_COMPRESSION" = x ; then
+cat >>$MAKEFILE <<EOF
+OPENAD_SUPPORT_C_SRC_COMPRESS_FILES = \
+cp.c
+EOF
+fi
+
+cat >>$MAKEFILE <<EOF
 OPENAD_SUPPORT_F90_SRC_FILES = \
+\$(OPENAD_SUPPORT_F90_SRC_COMPRESS_FILES) \
 w2f__types.F90 \
 OAD_active.F90 \
 OAD_cp.F90 \
@@ -3594,11 +3619,13 @@ OAD_rev.F90 \
 OAD_tape.F90 \
 OAD_regular_cp.F90 \
 OAD_auxillary_cp.F90 \
-revolve.F90
+revolve.F90 
+
 
 OPENAD_SUPPORT_C_SRC_FILES = \
 iaddr.c \
-timeRatio.c
+timeRatio.c \
+\$(OPENAD_SUPPORT_C_SRC_COMPRESS_FILES) 
 
 f95_test_mods.f90: \$(OPENAD_SUPPORT_F90_SRC_FILES:F90=$FS90)
 	cat \$^ > \$@
@@ -3670,12 +3697,29 @@ ad_input_code_sf.pre.s2p.xb.x2w.w2f.f$FS90: ad_input_code_sf.pre.s2p.xb.x2w.B
 ad_input_code_sf.pre.s2p.xb.x2w.w2f.td.f$FS90: ad_input_code_sf.pre.s2p.xb.x2w.w2f.f$FS90 \$(OADTOOLS)/insertTemplateDir.bash
 	\$(OADTOOLS)/insertTemplateDir.bash \$< \$@
 
+EOF
+
+if test ! "x$OPENAD_COMPRESSION" = x ; then
+cat >>$MAKEFILE <<EOF
+PPEXTRAS=\$(notdir \$(wildcard \$(OADTOOLS)/ad_template.*.F)) ad_inline_compress.F
+# postprocess F'
+postProcess.tag: ad_input_code_sf.pre.s2p.xb.x2w.w2f.td.f$FS90 \$(PPEXTRAS:.F=.f) | w2f__types.f90
+	\${OPENADFORTTK_BASE}/tools/SourceProcessing/postProcess.py --progress --timing --infoUnitFile w2f__types.f90 --outputFormat=fixed --separateOutput --pathSuffix "" --filenameSuffix "_oad" -m r -i ad_inline_compress.f \$<
+	# the target is a placeholder to trigger a single execution of the rule
+	touch \$@
+EOF
+else
+cat >>$MAKEFILE <<EOF
 PPEXTRAS=\$(notdir \$(wildcard \$(OADTOOLS)/ad_template.*.F)) ad_inline.F
 # postprocess F'
 postProcess.tag: ad_input_code_sf.pre.s2p.xb.x2w.w2f.td.f$FS90 \$(PPEXTRAS:.F=.f) | w2f__types.f90
 	\${OPENADFORTTK_BASE}/tools/SourceProcessing/postProcess.py --progress --timing --infoUnitFile w2f__types.f90 --outputFormat=fixed --separateOutput --pathSuffix "" --filenameSuffix "_oad" -m r -i ad_inline.f \$<
 	# the target is a placeholder to trigger a single execution of the rule
 	touch \$@
+EOF
+fi
+
+cat >>$MAKEFILE <<EOF
 # put this so make knows about the postprocessing output
 OAD_intrinsics_oad.f \$(CB2M_AD_FILES:.f$FS90=_oad.f): postProcess.tag
 

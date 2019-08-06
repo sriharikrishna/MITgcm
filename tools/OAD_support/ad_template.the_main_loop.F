@@ -51,10 +51,9 @@ c we may need these for the checkpointing
       use STREAMICE_CG_mod
 #endif
 #ifdef ALLOW_SHELFICE
+
       use shelfice_mod
       use shelfice_cost_mod
-#endif
-#ifdef ALLOW_OBCS
       use obcs_fields_mod
 #endif
 
@@ -92,6 +91,7 @@ c we may need these for the checkpointing
       integer :: temp_logical_tape_pointer
       integer :: temp_string_tape_pointer
       logical :: isfirst
+      integer :: cpsize
 #ifdef OAD_DEBUG_SPLIT1
       character*(80):: indentation='                                        
      +                                         '

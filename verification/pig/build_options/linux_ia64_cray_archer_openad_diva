@@ -17,7 +17,11 @@ CHECK_FOR_LAPACK=t
 FC_CHECK=f
 
 INCLUDES='-I/opt/cray/netcdf-hdf5parallel/4.4.1.1/cray/83/include -I/opt/cray/mpt/7.5.5/gni/mpich-cray/84/include'
-LIBS='-L/opt/cray/netcdf-hdf5parallel/4.4.1.1/cray/83/lib -L/opt/cray/mpt/7.5.5/gni/mpich-cray/84/lib'
+LIBS='-L/opt/cray/netcdf-hdf5parallel/4.4.1.1/cray/83/lib -L/opt/cray/mpt/7.5.5/gni/mpich-cray/84/lib '
+
+if test "x$OPENAD_COMPRESSION" != x ; then   #- with compression
+LIBS="$LIBS -lz "
+fi
 
 NOOPTFLAGS='-O0'
 NOOPTFILES=''

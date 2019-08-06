@@ -78,6 +78,7 @@ c we may need these for the checkpointing
 
       integer :: cp_loop_variable_1,cp_loop_variable_2,
      +     cp_loop_variable_3,cp_loop_variable_4,cp_loop_variable_5
+      integer :: cpsize
 
       type(modeType) :: our_orig_mode
 

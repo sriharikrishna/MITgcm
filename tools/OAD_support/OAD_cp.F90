@@ -1,5 +1,8 @@
 module OAD_cp
 
+#ifdef ALLOW_OPENAD_COMPRESSION
+  use cpc 
+#endif
   implicit none
 
   private :: cp_file_number, cp_open
@@ -43,7 +46,11 @@ contains
 
   subroutine write_open_i()
     implicit none
+#ifdef ALLOW_OPENAD_COMPRESSION
+    call cp_wr_open(cp_file_number,"oad_cp")
+#else
     call cp_open()
+#endif
 !    print *, 'writing ', cp_file_number
     cp_file_number=cp_file_number+1
   end subroutine 
@@ -53,14 +60,22 @@ contains
     integer X
     cp_file_number=X
 !    print *, 'writing ', cp_file_number
+#ifdef ALLOW_OPENAD_COMPRESSION
+    call cp_wr_open(cp_file_number,"oad_cp")
+#else
     call cp_open()
+#endif
   end subroutine 
 
   subroutine read_open_i()
     implicit none
     cp_file_number=cp_file_number-1
 !    print *, 'reading ', cp_file_number
+#ifdef ALLOW_OPENAD_COMPRESSION
+    call cp_rd_open(cp_file_number,"oad_cp")
+#else
     call cp_open()
+#endif
   end subroutine 
 
   subroutine read_openX_i(X)
@@ -68,7 +83,11 @@ contains
     integer X
     cp_file_number=X
 !    print *, 'reading ', cp_file_number
+#ifdef ALLOW_OPENAD_COMPRESSION
+    call cp_rd_open(cp_file_number,"oad_cp")
+#else
     call cp_open()
+#endif
   end subroutine 
 
   subroutine open_i()
@@ -92,7 +111,11 @@ include "mpif.h"
 
   subroutine close_i()
     implicit none
+#ifdef ALLOW_OPENAD_COMPRESSION
+    call cpc_close()
+#else
     close( UNIT=cp_io_unit)
+#endif
   end subroutine
 
   subroutine findunit_i()

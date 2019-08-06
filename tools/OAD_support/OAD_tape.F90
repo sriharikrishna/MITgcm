@@ -1,5 +1,8 @@
 module OAD_tape
 
+#ifdef ALLOW_OPENAD_COMPRESSION
+  use cpc 
+#endif
   implicit none
 
   private :: increment , dtt, itt, ltt, stt, & 
@@ -9,16 +12,7 @@ module OAD_tape
        pop_d0, pop_i0, pop_d1, pop_i1, & 
        push_d4, push_d6, & 
        pop_d4, pop_d6, &
-       cp_integer_tape_unit, cp_double_tape_unit, &
-       cp_logical_tape_unit, &
-       cp_open_integer_tape, cp_close_integer_tape, &
-       cp_read_integer_tape,&
-       cp_open_double_tape, cp_close_double_tape, &
-       cp_read_double_tape,&
-       cp_open_logical_tape, cp_close_logical_tape, &
-       cp_read_logical_tape, &
-       cp_open_string_tape, cp_close_string_tape, &
-       cp_read_string_tape 
+       cp_tape_unit
     
   public :: &
        oad_dt, oad_dt_ptr, oad_dt_sz, oad_dt_grow, &
@@ -29,8 +23,8 @@ module OAD_tape
        oad_tape_init, &
        oad_dump_tapestats, & 
        oad_tape_push, oad_tape_pop, &
-       cp_write_integer_tape, cp_write_double_tape, &
-       cp_write_logical_tape, cp_write_string_tape, &
+       cp_write_tape, cp_read_tape, &
+       cp_open_tape, cp_close_tape, &
        cp_read_tape_state, cp_write_tape_state
        
   double precision, dimension(:), allocatable :: oad_dt, dtt
@@ -43,8 +37,7 @@ module OAD_tape
   integer :: oad_lt_sz=0, oad_st_sz=0
   integer :: increment
   integer :: oad_chunk_size
-  integer :: cp_integer_tape_unit, cp_double_tape_unit
-  integer :: cp_logical_tape_unit, cp_string_tape_unit
+  integer :: cp_tape_unit
 
   interface oad_tape_init
     module procedure init
@@ -82,76 +75,22 @@ module OAD_tape
      module procedure pop_d4, pop_d6
   end interface
 
-!Integer Tape
-
-  interface cp_open_integer_tape
-     module procedure open_integer_tape_i
-  end interface
-
-  interface cp_close_integer_tape
-     module procedure close_integer_tape_i
-  end interface
-
-  interface cp_read_integer_tape
-     module procedure read_integer_tape_i
-  end interface
-
-  interface cp_write_integer_tape
-     module procedure write_integer_tape_i
-  end interface
-
-!Double Tape Store/Restore
-
-  interface cp_open_double_tape
-     module procedure open_double_tape_i
-  end interface
-
-  interface cp_close_double_tape
-     module procedure close_double_tape_i
-  end interface
-
-  interface cp_read_double_tape
-     module procedure read_double_tape_i
-  end interface
-
-  interface cp_write_double_tape
-     module procedure write_double_tape_i
-  end interface
-
 !Logical Tape Store/Restore
 
-  interface cp_open_logical_tape
-     module procedure open_logical_tape_i
+  interface cp_open_tape
+     module procedure open_tape_i
   end interface
 
-  interface cp_close_logical_tape
-     module procedure close_logical_tape_i
+  interface cp_close_tape
+     module procedure close_tape_i
   end interface
 
-  interface cp_read_logical_tape
-     module procedure read_logical_tape_i
+  interface cp_read_tape
+     module procedure read_tape_i
   end interface
 
-  interface cp_write_logical_tape
-     module procedure write_logical_tape_i
-  end interface
-
-!String Tape Store/Restore
-
-  interface cp_open_string_tape
-     module procedure open_string_tape_i
-  end interface
-
-  interface cp_close_string_tape
-     module procedure close_string_tape_i
-  end interface
-
-  interface cp_read_string_tape
-     module procedure read_string_tape_i
-  end interface
-
-  interface cp_write_string_tape
-     module procedure write_string_tape_i
+  interface cp_write_tape
+     module procedure write_tape_i
   end interface
 
 !Tape Status Store
@@ -395,174 +334,165 @@ contains
     v=reshape(oad_dt(oad_dt_ptr:oad_dt_ptr+chunk-1),dims) 
   end subroutine pop_d6
 
-!Integer Tape
-  subroutine open_integer_tape_i(fileno)
+  subroutine open_tape_i(fileno,tapetypestr,isread)
     implicit none
 #ifdef ALLOW_USE_MPI
 include "mpif.h"
 #endif
-    integer fileno
-    integer rank
-    integer mpirc
-    character*128 fname ! file name
+    integer ::fileno
+    integer ::rank
+    integer ::mpirc
+    logical ::isread
+    character*128 ::fname ! file name
+    character*128 ::tapetypestr 
+    fname(1:128) = " "
+#ifdef ALLOW_OPENAD_COMPRESSION
+    if(isread.eqv..true.) then
+      if(trim(tapetypestr).eq."integer") then
+        call cp_rd_open(fileno,"oad_aux_i_tp")
+      else if(trim(tapetypestr).eq."logical") then
+        call cp_rd_open(fileno,"oad_aux_l_tp")
+      else if(trim(tapetypestr).eq."double") then
+        call cp_rd_open(fileno,"oad_aux_d_tp")
+      else if(trim(tapetypestr).eq."string") then
+        call cp_rd_open(fileno,"oad_aux_s_tp")
+      else
+        write(*,*) "Matching tapetypestr not found", trim(tapetypestr)
+        stop
+      end if
+    else 
+      if(trim(tapetypestr).eq."integer") then
+        call cp_wr_open(fileno,"oad_aux_i_tp")
+      else if(trim(tapetypestr).eq."logical") then
+        call cp_wr_open(fileno,"oad_aux_l_tp")
+      else if(trim(tapetypestr).eq."double") then
+        call cp_wr_open(fileno,"oad_aux_d_tp")
+      else if(trim(tapetypestr).eq."string") then
+        call cp_wr_open(fileno,"oad_aux_s_tp")
+      else
+        write(*,*) "Matching tapetypestr not found", trim(tapetypestr)
+        stop
+      end if
+    end if
+#else
     rank=0
 #ifdef ALLOW_USE_MPI
     call mpi_comm_rank(MPI_COMM_WORLD,rank, mpirc)
 #endif
-    write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_integer_tape.',fileno,'.',rank
-    open( UNIT=cp_integer_tape_unit,FILE=TRIM(fname),FORM='unformatted',STATUS='UNKNOWN' )
+      if(trim(tapetypestr).eq."integer") then
+        write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_i_tp.',fileno,'.',rank
+      else if(trim(tapetypestr).eq."logical") then
+        write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_l_tp.',fileno,'.',rank
+      else if(trim(tapetypestr).eq."double") then
+        write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_d_tp.',fileno,'.',rank
+      else if(trim(tapetypestr).eq."string") then
+        write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_s_tp.',fileno,'.',rank
+      else
+        write(*,*) "Matching tapetypestr not found", trim(tapetypestr)
+        stop
+      end if
+#ifdef DEBUG_OPENAD_COMPRESS
+    write(*,*) "open_tape_i fname ::",fname,"::",TRIM(fname)  
+#endif
+    open( UNIT=cp_tape_unit,FILE=TRIM(fname),FORM='unformatted',STATUS='UNKNOWN' )
+#endif
   end subroutine 
 
-  subroutine close_integer_tape_i()
+  subroutine close_tape_i()
     implicit none
-    close( UNIT=cp_integer_tape_unit)
+#ifdef ALLOW_OPENAD_COMPRESSION
+    call cpc_close()
+#else
+    close( UNIT=cp_tape_unit)
+#endif
   end subroutine
 
-  subroutine write_integer_tape_i(fileno)
+  subroutine write_tape_i(fileno,tapetypestr)
     implicit none
-    integer fileno
-    call cp_open_integer_tape(fileno)
-    print *, 'DIVA Writing to file integer_tape', fileno
-    write (unit=cp_integer_tape_unit) oad_it(1:oad_it_ptr-1)
-    call cp_close_integer_tape
+    integer fileno,s
+    character*128 tapetypestr 
+#ifdef DEBUG_OPENAD_COMPRESS
+    write(*,*) 'DIVA Trying to open file ',trim(tapetypestr),'_tape', fileno
+#endif
+    call cp_open_tape(fileno,tapetypestr,.FALSE.)
+#ifdef DEBUG_OPENAD_COMPRESS
+    print *, 'DIVA Writing to file ',trim(tapetypestr),'_tape', fileno
+#endif
+    if(trim(tapetypestr).eq."integer") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      call CompressWrC_integer_1(oad_it(1:oad_it_ptr-1))
+#else
+      write (unit=cp_tape_unit) oad_it(1:oad_it_ptr-1)
+#endif
+    else if(trim(tapetypestr).eq."double") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      call CompressWrC_real_1(oad_dt(1:oad_dt_ptr-1))
+#else
+      write (unit=cp_tape_unit) oad_dt(1:oad_dt_ptr-1)
+#endif
+    else if(trim(tapetypestr).eq."logical") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      call CompressWrC_bool_1(oad_lt(1:oad_lt_ptr-1))
+#else
+      write (unit=cp_tape_unit) oad_lt(1:oad_lt_ptr-1)
+#endif
+    else if(trim(tapetypestr).eq."string") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      do s=1, oad_st_ptr-1
+        call CompressWrC_string(oad_st(s))
+      end do
+#else
+      write (unit=cp_tape_unit) oad_st(1:oad_st_ptr-1)
+#endif
+    else
+      write(*,*) "Unable to find tape nameed ", trim(tapetypestr)
+      stop
+    end if
+    call cp_close_tape
   end subroutine
 
-    subroutine read_integer_tape_i(fileno)
-    implicit none
-    integer fileno
-    call cp_open_integer_tape(fileno)
-    read (unit=cp_integer_tape_unit) oad_it(1:oad_it_ptr-1)
-    print *, 'DIVA Read from file integer_tape', fileno
-    call cp_close_integer_tape
-  end subroutine 
-
-!Double Tape
-  subroutine open_double_tape_i(fileno)
+  subroutine read_tape_i(fileno,tapetypestr)
     implicit none
 #ifdef ALLOW_USE_MPI
 include "mpif.h"
 #endif
-    integer fileno
-    integer rank
-    integer mpirc
-    character*128 fname ! file name
-    rank=0
+    integer fileno, mpirc, rank,s
+    character*128 :: tapetypestr
 #ifdef ALLOW_USE_MPI
     call mpi_comm_rank(MPI_COMM_WORLD,rank, mpirc)
 #endif
-    write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_double_tape.',fileno,'.',rank
-    open( UNIT=cp_double_tape_unit,FILE=TRIM(fname),FORM='unformatted',STATUS='UNKNOWN' )
-  end subroutine 
-
-  subroutine close_double_tape_i()
-    implicit none
-    close( UNIT=cp_double_tape_unit)
-  end subroutine
-
-  subroutine write_double_tape_i(fileno)
-    implicit none
-    integer fileno
-    call cp_open_double_tape(fileno)
-    print *, 'DIVA Writing to file double_tape', fileno
-    write (unit=cp_double_tape_unit) oad_dt(1:oad_dt_ptr-1)
-    call cp_close_double_tape
-  end subroutine
-
-  subroutine read_double_tape_i(fileno)
-    implicit none
-    integer fileno
-    call cp_open_double_tape(fileno)
-    read (unit=cp_double_tape_unit) oad_dt(1:oad_dt_ptr-1)
-    print *, 'DIVA Read from file double_tape', fileno
-    call cp_close_double_tape
-  end subroutine 
-
-!Logical Tape
-  subroutine open_logical_tape_i(fileno)
-    implicit none
-#ifdef ALLOW_USE_MPI
-include "mpif.h"
+    call cp_open_tape(fileno,tapetypestr,.TRUE.)
+    if(trim(tapetypestr).eq."integer") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      call CompressRdC_integer_1(oad_it(1:oad_it_ptr-1))
+#else
+      read (unit=cp_tape_unit) oad_it(1:oad_it_ptr-1)
 #endif
-    integer fileno
-    integer rank
-    integer mpirc
-    character*128 fname ! file name
-    rank=0
-#ifdef ALLOW_USE_MPI
-    call mpi_comm_rank(MPI_COMM_WORLD,rank, mpirc)
+    else if(trim(tapetypestr).eq."double") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      call CompressRdC_real_1(oad_dt(1:oad_dt_ptr-1))
+#else
+      read (unit=cp_tape_unit) oad_dt(1:oad_dt_ptr-1)
 #endif
-    write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_logical_tape.',fileno,'.',rank
-    open( UNIT=cp_logical_tape_unit,FILE=TRIM(fname),FORM='unformatted',STATUS='UNKNOWN' )
-  end subroutine 
-
-  subroutine close_logical_tape_i()
-    implicit none
-    close( UNIT=cp_logical_tape_unit)
-  end subroutine
-
-  subroutine write_logical_tape_i(fileno)
-    implicit none
-    integer fileno
-    call cp_open_logical_tape(fileno)
-    print *, 'DIVA Writing to file logical_tape', fileno
-    write (unit=cp_logical_tape_unit) oad_lt(1:oad_lt_ptr-1)
-    call cp_close_logical_tape
-  end subroutine
-
-  subroutine read_logical_tape_i(fileno)
-    implicit none
-#ifdef ALLOW_USE_MPI
-include "mpif.h"
+    else if(trim(tapetypestr).eq."logical") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      call CompressWrC_bool_1(oad_lt(1:oad_lt_ptr-1))
+#else
+      read (unit=cp_tape_unit) oad_lt(1:oad_lt_ptr-1)
 #endif
-    integer fileno, mpirc, rank
-#ifdef ALLOW_USE_MPI
-    call mpi_comm_rank(MPI_COMM_WORLD,rank, mpirc)
+    else if(trim(tapetypestr).eq."string") then
+#ifdef ALLOW_OPENAD_COMPRESSION
+      do s=1, oad_st_ptr-1
+        call CompressRdC_string(oad_st(s))
+      end do
+#else
+      read (unit=cp_tape_unit) oad_st(1:oad_st_ptr-1)
 #endif
-    call cp_open_logical_tape(fileno)
-    read (unit=cp_logical_tape_unit) oad_lt(1:oad_lt_ptr-1)
-    print *, 'DIVA Read from file logical_tape', fileno, rank
-    call cp_close_logical_tape
-  end subroutine
-
-!STRING
-  subroutine open_string_tape_i(fileno)
-    implicit none
-#ifdef ALLOW_USE_MPI
-include "mpif.h"
-#endif
-    integer fileno
-    integer rank
-    integer mpirc
-    character*128 fname ! file name
-    rank=0
-#ifdef ALLOW_USE_MPI
-    call mpi_comm_rank(MPI_COMM_WORLD,rank, mpirc)
-#endif
-    write(fname,'(A,I3.3,A,I3.3)') 'oad_aux_string_tape.',fileno,'.',rank
-    open(UNIT=cp_string_tape_unit,FILE=TRIM(fname),FORM='unformatted',STATUS='UNKNOWN')
-  end subroutine
-
-  subroutine close_string_tape_i()
-    implicit none
-    close( UNIT=cp_string_tape_unit)
-  end subroutine
-
-  subroutine write_string_tape_i(fileno)
-    implicit none
-    integer fileno
-    call cp_open_string_tape(fileno)
-    print *, 'DIVA Writing to file string_tape', fileno
-    write (unit=cp_string_tape_unit) oad_st(1:oad_st_ptr-1)
-    call cp_close_string_tape
-  end subroutine
-
-  subroutine read_string_tape_i(fileno)
-    implicit none
-    integer fileno
-    call cp_open_string_tape(fileno)
-    read (unit=cp_string_tape_unit) oad_st(1:oad_st_ptr-1)
-    print *, 'DIVA Read from file string_tape', fileno
-    call cp_close_string_tape
+    else
+      write(*,*) "Unable to find tape nameed ", tapetypestr
+      stop
+    end if
+    call cp_close_tape
   end subroutine
 
 !Tape State
@@ -576,7 +506,6 @@ include "mpif.h"
     integer mpirc
     logical exst
     character*128 fname ! file name
-    rank=0
 #ifdef ALLOW_USE_MPI
     call mpi_comm_rank(MPI_COMM_WORLD,rank, mpirc)
 #endif
@@ -597,11 +526,10 @@ include "mpif.h"
     write(unit=77,fmt=*) oad_st_ptr
     write(unit=77,fmt=*) oad_st_sz
     close(unit=77)
-    print *, 'DIVA Writing tape_state', fileno
-    call cp_write_integer_tape(fileno)
-    call cp_write_double_tape(fileno)
-    call cp_write_logical_tape(fileno)
-    call cp_write_string_tape(fileno)
+    call cp_write_tape(fileno,"integer")
+    call cp_write_tape(fileno,"double")
+    call cp_write_tape(fileno,"logical")
+    call cp_write_tape(fileno,"string")
   end subroutine
 
   subroutine read_tape_state_i(fileno) 
@@ -661,10 +589,10 @@ include "mpif.h"
     allocate(oad_st(oad_st_sz))
 
     if (exst.eqv..true.) then
-      call cp_read_integer_tape(fileno)
-      call cp_read_double_tape(fileno)
-      call cp_read_logical_tape(fileno)
-      call cp_read_string_tape(fileno)
+      call cp_read_tape(fileno,"integer")
+      call cp_read_tape(fileno,"double ")
+      call cp_read_tape(fileno,"logical")
+      call cp_read_tape(fileno,"string ")
     end if
 
   end subroutine 
