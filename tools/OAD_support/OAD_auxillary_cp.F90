@@ -111,7 +111,7 @@ contains
 
 
 #ifdef ALLOW_USE_MPI
-include "mpif.h" 
+#include "mpif.h" 
 #endif
 
     integer rank, mpirc
@@ -183,7 +183,7 @@ include "mpif.h"
   subroutine open_state_i()
     implicit none
 #ifdef ALLOW_USE_MPI
-include "mpif.h" 
+#include "mpif.h" 
 #endif
     integer rank, mpirc
     character*128 fname ! file name

@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# To be used with the suite of cray compilers (PrgEnv-cray).
+# To get netcdf, add:
+# module load cray-hdf5-parallel/1.10.0.1
+# module load cray-netcdf-hdf5parallel/4.4.1.1
+
+CC='cc'
+#FC='ftn'
+#F90C='ftn'
+FC='/lustre/sw/intel/compilers_and_libraries/linux/mpi/bin64/mpif90'
+F90C='/lustre/sw/intel/compilers_and_libraries/linux/mpi/bin64/mpif90'
+
+EFINES='-DWORDLENGTH=4 -D_BYTESWAPIO -DHAVE_LAPACK'
+CPP='cpp -traditional -P'
+EXTENDED_SRC_FLAG='-Mextend'
+GET_FC_VERSION="-V"
+CHECK_FOR_LAPACK=t
+FC_CHECK=f
+
+#INCLUDES='-I/lustre/sw/netcdf/4.4.1/include -I/lustre/sw/openmpi/2.1.0//include'
+#LIBS='-L/lustre/sw/netcdf/4.4.1/lib/ -L/lustre/sw/openmpi/2.1.0/lib '
+INCLUDES='-I/lustre/sw/netcdf/4.4.1/include -I/lustre/sw/intel/compilers_and_libraries/linux/mpi/include64'
+LIBS='-L/lustre/sw/netcdf/4.4.1/lib/ -L/lustre/sw/intel/compilers_and_libraries/linux/mpi/lib64 '
+
+if test "x$OPENAD_COMPRESSION" != x ; then   #- with compression
+LIBS="$LIBS -lz "
+fi
+
+NOOPTFLAGS='-O0'
+NOOPTFILES=''
+
+if test "x$OPENAD_DIVA" = x ; then   #- with divided adjoints:
+    NOOPTFILES=$NOOPTFILES
+else 
+    NOOPTFILES="$NOOPTFILES main_do_loop_cb2m_oad.f"
+fi
+
+if test "x$IEEE" = x ; then   #- with optimisation:
+#   FOPTIM='-O2 -hfp3 -Oipa5' for less agressive optimization
+#   Be aware not all experiments pass the restart test with optimization
+#    FOPTIM='-O3 -hfp3 -Oipa5'
+    FOPTIM='-O3 '
+else
+    if test "x$DEVEL" = x ; then  #- no optimisation + IEEE :
+#      FOPTIM='-O0 -hfp0'
+      FOPTIM='-O0 '
+    else                          #- development/check options:
+#      FOPTIM='-O0 -hfp0'
+#      FOPTIM="$FOPTIM -g -Rbc -rm -hmsgs -hnegmsgs"
+      FOPTIM='-O0 -g'
+    fi
+fi
+
+#- For big executable, this could help:
+F90FIXEDFORMAT='-ffixed-form'
+#FFLAGS='-h pic -dynamic' $INCLUDES
+#CFLAGS='-h pic -dynamic' $INCLUDES
+#FFLAGS='-h pic -dynamic'
+#CFLAGS='-h pic -dynamic' 
+

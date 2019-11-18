@@ -93,7 +93,7 @@ contains
   subroutine open_i()
     implicit none
 #ifdef ALLOW_USE_MPI
-include "mpif.h" 
+#include "mpif.h" 
 #endif
     integer rank, mpirc
     character*128 fname ! file name

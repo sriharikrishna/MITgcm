@@ -337,7 +337,7 @@ contains
   subroutine open_tape_i(fileno,tapetypestr,isread)
     implicit none
 #ifdef ALLOW_USE_MPI
-include "mpif.h"
+#include "mpif.h"
 #endif
     integer ::fileno
     integer ::rank
@@ -454,7 +454,7 @@ include "mpif.h"
   subroutine read_tape_i(fileno,tapetypestr)
     implicit none
 #ifdef ALLOW_USE_MPI
-include "mpif.h"
+#include "mpif.h"
 #endif
     integer fileno, mpirc, rank,s
     character*128 :: tapetypestr
@@ -499,7 +499,7 @@ include "mpif.h"
   subroutine write_tape_state_i(fileno)
     implicit none
 #ifdef ALLOW_USE_MPI
-include "mpif.h"
+#include "mpif.h"
 #endif
     integer fileno
     integer rank
@@ -526,16 +526,16 @@ include "mpif.h"
     write(unit=77,fmt=*) oad_st_ptr
     write(unit=77,fmt=*) oad_st_sz
     close(unit=77)
-    call cp_write_tape(fileno,"integer")
-    call cp_write_tape(fileno,"double")
-    call cp_write_tape(fileno,"logical")
-    call cp_write_tape(fileno,"string")
+    call write_tape_i(fileno,"integer")
+    call write_tape_i(fileno,"double")
+    call write_tape_i(fileno,"logical")
+    call write_tape_i(fileno,"string")
   end subroutine
 
   subroutine read_tape_state_i(fileno) 
     implicit none
 #ifdef ALLOW_USE_MPI
-include "mpif.h"
+#include "mpif.h"
 #endif
     integer fileno
     integer rank
@@ -589,10 +589,10 @@ include "mpif.h"
     allocate(oad_st(oad_st_sz))
 
     if (exst.eqv..true.) then
-      call cp_read_tape(fileno,"integer")
-      call cp_read_tape(fileno,"double ")
-      call cp_read_tape(fileno,"logical")
-      call cp_read_tape(fileno,"string ")
+      call read_tape_i(fileno,"integer")
+      call read_tape_i(fileno,"double ")
+      call read_tape_i(fileno,"logical")
+      call read_tape_i(fileno,"string ")
     end if
 
   end subroutine 
